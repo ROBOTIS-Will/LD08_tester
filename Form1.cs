@@ -14,8 +14,9 @@ namespace LD08_tester
 {
   public partial class Form1 : Form
   {
-    private Thread readThread;
-    private Thread processThread;
+    //private Thread readThread;
+    delegate void SetDataCallback(int data);
+    //private Thread processThread;
     //private Thread drawThread;
 
     private int data_length = 0;
@@ -77,6 +78,8 @@ namespace LD08_tester
       {
         button_open.Enabled = false;
       }
+
+      serialPort1.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(port_DataReceived);
     }
 
     private void Form1_Load(object sender, EventArgs e)
@@ -98,14 +101,14 @@ namespace LD08_tester
 
     private void Form1_FormClosing(object sender, FormClosingEventArgs e)
     {
-      if (processThread != null && processThread.IsAlive)
-      {
-        processThread.Abort();
-      }
-      if (readThread != null && readThread.IsAlive)
-      {
-        readThread.Abort();
-      }
+      //if (processThread != null && processThread.IsAlive)
+      //{
+      //  processThread.Abort();
+      //}
+      //if (readThread != null && readThread.IsAlive)
+      //{
+      //  readThread.Abort();
+      //}
     }
 
     private void button_open_Click(object sender, EventArgs e)
@@ -122,16 +125,16 @@ namespace LD08_tester
         serialPort1.Parity = Parity.None;
         serialPort1.Open();
 
-        textBox.Text = Environment.NewLine + "포트가 열렸습니다." + Environment.NewLine;
+        textBox.Text += Environment.NewLine + "포트가 열렸습니다." + Environment.NewLine;
 
-        readThread = new Thread(Read);
-        readThread.Start();
-        processThread = new Thread(Process);
-        processThread.Start();
+        //readThread = new Thread(Read);
+        //readThread.Start();
+        //processThread = new Thread(Process);
+        //processThread.Start();
       }
       else
       {
-        textBox.Text = Environment.NewLine + "포트가 이미 열려있습니다." + Environment.NewLine;
+        textBox.Text += Environment.NewLine + "포트가 이미 열려있습니다." + Environment.NewLine;
       }
     }
 
@@ -142,193 +145,208 @@ namespace LD08_tester
         if (serialPort1.IsOpen)
         {
           Array.Clear(raw_data, 0, raw_data.Length);
+          serialPort1.Close();
           serialPort1.DiscardInBuffer();
           serialPort1.DiscardOutBuffer();
 
-          textBox.Text = Environment.NewLine + "포트를 닫았습니다." + Environment.NewLine;
+          textBox.Text += Environment.NewLine + "포트를 닫았습니다." + Environment.NewLine;
 
           _continue = false;
         }
         else
         {
-          textBox.Text = Environment.NewLine + "포트가 이미 닫혀있습니다." + Environment.NewLine;
+          textBox.Text += Environment.NewLine + "포트가 이미 닫혀있습니다." + Environment.NewLine;
         }
       }
       catch (Exception ex)
       {
-        //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
     }
 
-    private void Read()
+    private void port_DataReceived(object sender, SerialDataReceivedEventArgs e)
     {
-      while (_continue)
-      {
-        try
-        {
-          int rx_data = serialPort1.ReadByte();
-          raw_data[write_index++] = rx_data;
-          if (write_index >= 100)
-          {
-            write_index = 0;
-          }
-
-          // print received data on the textbox
-          //this.Invoke((MethodInvoker)delegate
-          //{
-          //  textBox.AppendText(string.Format("{0:X2} ", rx_data));
-          //});
-        } catch (Exception ex)
-        {
-          //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-      }
-
-      if (_continue == false)
-      {
-        try
-        {
-          serialPort1.Close();
-          readThread.Join();
-          readThread.Abort();
-        }
-        catch (Exception ex)
-        {
-          //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-      }
+      int rx_data = serialPort1.ReadChar();
+      BeginInvoke(new SetDataCallback(SetData), new object[] { rx_data });
     }
 
-    private void Process()
+    private void SetData(int data)
     {
-      int temp_index = 0;
-      while (_continue)
-      {
-        if (raw_data[read_index] == 0x54)
-        {
-          parse_data[temp_index] = raw_data[read_index];
-          temp_index = temp_index + 1;
-          read_index = read_index + 1;
-          if (read_index >= 100)
-          {
-            read_index = 0;
-          }
-          if (raw_data[read_index] == 0x2C)
-          {
-            for (int count = 0; count <46; count++)
-            {
-              parse_data[temp_index] = raw_data[read_index];
-              temp_index = temp_index + 1;
-              if (temp_index > 47)
-                temp_index = 0;
-              read_index = read_index + 1;
-              if(read_index >= 100)
-              {
-                read_index = 0;
-              }
-            }
-            if(!checkCRC())
-            {
-              // CRC ERROR!!!
-              this.Invoke((MethodInvoker)delegate
-              {
-                textBox.Text = "[ERROR] Invalid CRC!!!";
-              });
-              //Array.Clear(raw_data, 0, raw_data.Length);
-              //read_index = 0;
-              read_index = 0;
-              temp_index = 0;
-              Array.Clear(parse_data, 0, parse_data.Length);
-            }
-            this.Invoke((MethodInvoker)delegate
-            {
-              textBox_rpm.Text = lds_rpm.ToString();
-              textBox_data_length.Text = data_length.ToString();
-              textBox_start_angle.Text = start_angle.ToString();
-              textBox_end_angle.Text = end_angle.ToString();
-              textBox_time.Text = timestamp.ToString();
-              textBox_angle_gap.Text = (end_angle - start_angle).ToString();
-              //textBox_time_gap.Text = (timestamp - timestamp_temp).ToString();
-              textBox_time_gap.Text = timestamp_temp.ToString();
-            });
-          }
-          else
-          {
-            read_index = read_index + 1;
-            temp_index = 0;
-            if (read_index >= 100)
-            {
-              read_index = 0;
-            }
-          }
-        }
-        else
-        {
-          read_index = read_index + 1;
-          temp_index = 0;
-          if (read_index >= 100)
-          {
-            read_index = 0;
-          }
-        }
-      }
-
-      if (_continue == false)
-      {
-        try
-        {
-          processThread.Join();
-          processThread.Abort();
-        }
-        catch (Exception ex)
-        {
-          //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-      }
-    }
-
-    private bool checkCRC()
-    {
-      int crc = 0;
-      int i = 0;
-
-      //this.Invoke((MethodInvoker)delegate
-      //{
-      //  textBox.Text += Environment.NewLine + "==================" + Environment.NewLine;
-      //});
-
-      for (i = 0; i < 47; i++)
-      {
-        crc = CrcTable[(crc ^ parse_data[i]) & 0xFF];
-        this.Invoke((MethodInvoker)delegate
-        {
-          textBox.Text = textBox.Text + string.Format("{0:X2} ", parse_data[i]);
-        });
-      }
       this.Invoke((MethodInvoker)delegate
       {
-        textBox.Text = textBox.Text + Environment.NewLine + "Cal CRC : " + string.Format("{0:X2} ", crc) + ", CRC : " + string.Format("{0:X2} ", parse_data[46]) + Environment.NewLine;
+        textBox.AppendText(string.Format("{0:X2} ", data));
       });
-      if (crc == parse_data[46])
-      {
-        data_length = parse_data[1];
-        lds_rpm = (parse_data[3] << 8) + parse_data[2];
-        start_angle = ((parse_data[5] << 8) + parse_data[4]) / 100.0;
-        end_angle = ((parse_data[43] << 8) + parse_data[42]) / 100.0;
-        timestamp = (parse_data[45] << 8) + parse_data[44];
-        timestamp_temp = timestamp;
-        return true;
-      }
-      else
-      {
-        // CRC ERROR!!!
-        this.Invoke((MethodInvoker)delegate
-        {
-          textBox.Text += string.Format("[ERROR] Invalid calc CRC: {0:X2}", crc) + Environment.NewLine;
-        });
-        return false;
-      }
     }
+
+    //private void Read()
+    //{
+    //  while (_continue)
+    //  {
+    //    try
+    //    {
+    //      int rx_data = serialPort1.ReadByte();
+    //      raw_data[write_index++] = rx_data;
+    //      if (write_index >= 100)
+    //      {
+    //        write_index = 0;
+    //      }
+
+    //      // print received data on the textbox
+    //      //this.Invoke((MethodInvoker)delegate
+    //      //{
+    //      //  textBox.AppendText(string.Format("{0:X2} ", rx_data));
+    //      //});
+    //    } catch (Exception ex)
+    //    {
+    //      //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    //    }
+    //  }
+
+    //  if (_continue == false)
+    //  {
+    //    try
+    //    {
+    //      serialPort1.Close();
+    //      //readThread.Join();
+    //      //readThread.Abort();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //      //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    //    }
+    //  }
+    //}
+
+    //private void Process()
+    //{
+    //  int temp_index = 0;
+    //  while (_continue)
+    //  {
+    //    if (raw_data[read_index] == 0x54)
+    //    {
+    //      parse_data[temp_index] = raw_data[read_index];
+    //      temp_index = temp_index + 1;
+    //      read_index = read_index + 1;
+    //      if (read_index >= 100)
+    //      {
+    //        read_index = 0;
+    //      }
+    //      if (raw_data[read_index] == 0x2C)
+    //      {
+    //        for (int count = 0; count <46; count++)
+    //        {
+    //          parse_data[temp_index] = raw_data[read_index];
+    //          temp_index = temp_index + 1;
+    //          if (temp_index > 47)
+    //            temp_index = 0;
+    //          read_index = read_index + 1;
+    //          if(read_index >= 100)
+    //          {
+    //            read_index = 0;
+    //          }
+    //        }
+    //        if(!checkCRC())
+    //        {
+    //          // CRC ERROR!!!
+    //          this.Invoke((MethodInvoker)delegate
+    //          {
+    //            textBox.Text += "[ERROR] Invalid CRC!!!";
+    //          });
+    //          //Array.Clear(raw_data, 0, raw_data.Length);
+    //          //read_index = 0;
+    //          read_index = 0;
+    //          temp_index = 0;
+    //          Array.Clear(parse_data, 0, parse_data.Length);
+    //        }
+    //        this.Invoke((MethodInvoker)delegate
+    //        {
+    //          textBox_rpm.Text = lds_rpm.ToString();
+    //          textBox_data_length.Text = data_length.ToString();
+    //          textBox_start_angle.Text = start_angle.ToString();
+    //          textBox_end_angle.Text = end_angle.ToString();
+    //          textBox_time.Text = timestamp.ToString();
+    //          textBox_angle_gap.Text = (end_angle - start_angle).ToString();
+    //          //textBox_time_gap.Text = (timestamp - timestamp_temp).ToString();
+    //          textBox_time_gap.Text = timestamp_temp.ToString();
+    //        });
+    //      }
+    //      else
+    //      {
+    //        read_index = read_index + 1;
+    //        temp_index = 0;
+    //        if (read_index >= 100)
+    //        {
+    //          read_index = 0;
+    //        }
+    //      }
+    //    }
+    //    else
+    //    {
+    //      read_index = read_index + 1;
+    //      temp_index = 0;
+    //      if (read_index >= 100)
+    //      {
+    //        read_index = 0;
+    //      }
+    //    }
+    //  }
+
+    //  if (_continue == false)
+    //  {
+    //    try
+    //    {
+    //      processThread.Join();
+    //      processThread.Abort();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //      //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+    //    }
+    //  }
+    //}
+
+    //private bool checkCRC()
+    //{
+    //  int crc = 0;
+    //  int i = 0;
+
+    //  //this.Invoke((MethodInvoker)delegate
+    //  //{
+    //  //  textBox.Text += Environment.NewLine + "==================" + Environment.NewLine;
+    //  //});
+
+    //  for (i = 0; i < 47; i++)
+    //  {
+    //    crc = CrcTable[(crc ^ parse_data[i]) & 0xFF];
+    //    this.Invoke((MethodInvoker)delegate
+    //    {
+    //      textBox.Text = textBox.Text + string.Format("{0:X2} ", parse_data[i]);
+    //    });
+    //  }
+    //  this.Invoke((MethodInvoker)delegate
+    //  {
+    //    textBox.Text = textBox.Text + Environment.NewLine + "Cal CRC : " + string.Format("{0:X2} ", crc) + ", CRC : " + string.Format("{0:X2} ", parse_data[46]) + Environment.NewLine;
+    //  });
+    //  if (crc == parse_data[46])
+    //  {
+    //    data_length = parse_data[1];
+    //    lds_rpm = (parse_data[3] << 8) + parse_data[2];
+    //    start_angle = ((parse_data[5] << 8) + parse_data[4]) / 100.0;
+    //    end_angle = ((parse_data[43] << 8) + parse_data[42]) / 100.0;
+    //    timestamp = (parse_data[45] << 8) + parse_data[44];
+    //    timestamp_temp = timestamp;
+    //    return true;
+    //  }
+    //  else
+    //  {
+    //    // CRC ERROR!!!
+    //    this.Invoke((MethodInvoker)delegate
+    //    {
+    //      textBox.Text += string.Format("[ERROR] Invalid calc CRC: {0:X2}", crc) + Environment.NewLine;
+    //    });
+    //    return false;
+    //  }
+    //}
 
     //private void drawLDS()
     //{
