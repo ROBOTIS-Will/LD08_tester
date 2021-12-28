@@ -71,7 +71,7 @@
       this.serialComboBox.FormattingEnabled = true;
       this.serialComboBox.Location = new System.Drawing.Point(100, 6);
       this.serialComboBox.Name = "serialComboBox";
-      this.serialComboBox.Size = new System.Drawing.Size(140, 20);
+      this.serialComboBox.Size = new System.Drawing.Size(127, 20);
       this.serialComboBox.TabIndex = 1;
       // 
       // button_open
@@ -112,7 +112,7 @@
       this.groupBox1.Controls.Add(this.label2);
       this.groupBox1.Location = new System.Drawing.Point(14, 155);
       this.groupBox1.Name = "groupBox1";
-      this.groupBox1.Size = new System.Drawing.Size(260, 242);
+      this.groupBox1.Size = new System.Drawing.Size(213, 242);
       this.groupBox1.TabIndex = 5;
       this.groupBox1.TabStop = false;
       this.groupBox1.Text = "LDS RAW Data";
@@ -121,7 +121,7 @@
       // 
       this.textBox_time_gap.Location = new System.Drawing.Point(86, 204);
       this.textBox_time_gap.Name = "textBox_time_gap";
-      this.textBox_time_gap.Size = new System.Drawing.Size(140, 21);
+      this.textBox_time_gap.Size = new System.Drawing.Size(108, 21);
       this.textBox_time_gap.TabIndex = 13;
       // 
       // label8
@@ -137,7 +137,7 @@
       // 
       this.textBox_angle_gap.Location = new System.Drawing.Point(86, 177);
       this.textBox_angle_gap.Name = "textBox_angle_gap";
-      this.textBox_angle_gap.Size = new System.Drawing.Size(140, 21);
+      this.textBox_angle_gap.Size = new System.Drawing.Size(108, 21);
       this.textBox_angle_gap.TabIndex = 11;
       // 
       // label7
@@ -153,7 +153,7 @@
       // 
       this.textBox_data_length.Location = new System.Drawing.Point(86, 20);
       this.textBox_data_length.Name = "textBox_data_length";
-      this.textBox_data_length.Size = new System.Drawing.Size(140, 21);
+      this.textBox_data_length.Size = new System.Drawing.Size(108, 21);
       this.textBox_data_length.TabIndex = 9;
       // 
       // label6
@@ -169,28 +169,28 @@
       // 
       this.textBox_time.Location = new System.Drawing.Point(86, 150);
       this.textBox_time.Name = "textBox_time";
-      this.textBox_time.Size = new System.Drawing.Size(140, 21);
+      this.textBox_time.Size = new System.Drawing.Size(108, 21);
       this.textBox_time.TabIndex = 7;
       // 
       // textBox_end_angle
       // 
       this.textBox_end_angle.Location = new System.Drawing.Point(86, 117);
       this.textBox_end_angle.Name = "textBox_end_angle";
-      this.textBox_end_angle.Size = new System.Drawing.Size(140, 21);
+      this.textBox_end_angle.Size = new System.Drawing.Size(108, 21);
       this.textBox_end_angle.TabIndex = 6;
       // 
       // textBox_start_angle
       // 
       this.textBox_start_angle.Location = new System.Drawing.Point(86, 84);
       this.textBox_start_angle.Name = "textBox_start_angle";
-      this.textBox_start_angle.Size = new System.Drawing.Size(140, 21);
+      this.textBox_start_angle.Size = new System.Drawing.Size(108, 21);
       this.textBox_start_angle.TabIndex = 5;
       // 
       // textBox_rpm
       // 
       this.textBox_rpm.Location = new System.Drawing.Point(86, 51);
       this.textBox_rpm.Name = "textBox_rpm";
-      this.textBox_rpm.Size = new System.Drawing.Size(140, 21);
+      this.textBox_rpm.Size = new System.Drawing.Size(108, 21);
       this.textBox_rpm.TabIndex = 4;
       // 
       // label5
@@ -232,19 +232,20 @@
       // groupBox2
       // 
       this.groupBox2.Controls.Add(this.textBox);
-      this.groupBox2.Location = new System.Drawing.Point(280, 239);
+      this.groupBox2.Location = new System.Drawing.Point(233, 239);
       this.groupBox2.Name = "groupBox2";
-      this.groupBox2.Size = new System.Drawing.Size(423, 158);
+      this.groupBox2.Size = new System.Drawing.Size(1018, 158);
       this.groupBox2.TabIndex = 14;
       this.groupBox2.TabStop = false;
       this.groupBox2.Text = "Status Message";
       // 
       // textBox
       // 
-      this.textBox.Location = new System.Drawing.Point(16, 27);
+      this.textBox.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+      this.textBox.Location = new System.Drawing.Point(6, 20);
       this.textBox.Multiline = true;
       this.textBox.Name = "textBox";
-      this.textBox.Size = new System.Drawing.Size(388, 114);
+      this.textBox.Size = new System.Drawing.Size(1006, 132);
       this.textBox.TabIndex = 15;
       // 
       // pictureBox1
@@ -259,7 +260,7 @@
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(718, 409);
+      this.ClientSize = new System.Drawing.Size(1263, 409);
       this.Controls.Add(this.pictureBox1);
       this.Controls.Add(this.groupBox2);
       this.Controls.Add(this.groupBox1);

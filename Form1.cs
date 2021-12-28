@@ -15,8 +15,9 @@ namespace LD08_tester
   public partial class Form1 : Form
   {
     //private Thread readThread;
-    delegate void SetDataCallback(int data);
-    //private Thread processThread;
+    //delegate void SetDataCallback(int data);
+    delegate void parsePacketCallback();
+
     //private Thread drawThread;
 
     private int data_length = 0;
@@ -26,11 +27,10 @@ namespace LD08_tester
     private int timestamp = 0;
     private int timestamp_temp = 0;
 
-    private bool _continue = true;
-    private int[] raw_data = new int[100];
     private int[] parse_data = new int[47];
     private int write_index = 0;
     private int read_index = 0;
+    private int parseStatus = 0;
     private byte[] CrcTable = new byte[256] {
       0x00, 0x4d, 0x9a, 0xd7, 0x79, 0x34, 0xe3,
       0xae, 0xf2, 0xbf, 0x68, 0x25, 0x8b, 0xc6, 0x11, 0x5c, 0xa9, 0xe4, 0x33,
@@ -113,28 +113,34 @@ namespace LD08_tester
 
     private void button_open_Click(object sender, EventArgs e)
     {
-      if (serialPort1.IsOpen == false)
+      try
       {
-        _continue = true;
-        Array.Clear(raw_data, 0, raw_data.Length);
+        if (serialPort1.IsOpen == false)
+        {
+          Array.Clear(parse_data, 0, parse_data.Length);
 
-        serialPort1.PortName = serialComboBox.SelectedItem.ToString();
-        serialPort1.BaudRate = 115200;
-        serialPort1.DataBits = 8;
-        serialPort1.StopBits = StopBits.One;
-        serialPort1.Parity = Parity.None;
-        serialPort1.Open();
+          serialPort1.PortName = serialComboBox.SelectedItem.ToString();
+          serialPort1.BaudRate = 115200;
+          serialPort1.DataBits = 8;
+          serialPort1.StopBits = StopBits.One;
+          serialPort1.Parity = Parity.None;
+          serialPort1.Open();
 
-        textBox.Text += Environment.NewLine + "포트가 열렸습니다." + Environment.NewLine;
+          textBox.AppendText(Environment.NewLine + "포트가 열렸습니다." + Environment.NewLine);
 
-        //readThread = new Thread(Read);
-        //readThread.Start();
-        //processThread = new Thread(Process);
-        //processThread.Start();
+          //readThread = new Thread(Read);
+          //readThread.Start();
+          //processThread = new Thread(Process);
+          //processThread.Start();
+        }
+        else
+        {
+          textBox.AppendText(Environment.NewLine + "포트가 이미 열려있습니다." + Environment.NewLine);
+        }
       }
-      else
+      catch (Exception ex)
       {
-        textBox.Text += Environment.NewLine + "포트가 이미 열려있습니다." + Environment.NewLine;
+        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
       }
     }
 
@@ -144,18 +150,16 @@ namespace LD08_tester
       {
         if (serialPort1.IsOpen)
         {
-          Array.Clear(raw_data, 0, raw_data.Length);
+          Array.Clear(parse_data, 0, parse_data.Length);
           serialPort1.Close();
-          serialPort1.DiscardInBuffer();
-          serialPort1.DiscardOutBuffer();
+          //serialPort1.DiscardInBuffer();
+          //serialPort1.DiscardOutBuffer();
 
-          textBox.Text += Environment.NewLine + "포트를 닫았습니다." + Environment.NewLine;
-
-          _continue = false;
+          textBox.AppendText(Environment.NewLine + "포트를 닫았습니다." + Environment.NewLine);
         }
         else
         {
-          textBox.Text += Environment.NewLine + "포트가 이미 닫혀있습니다." + Environment.NewLine;
+          textBox.AppendText(Environment.NewLine + "포트가 이미 닫혀있습니다." + Environment.NewLine);
         }
       }
       catch (Exception ex)
@@ -167,55 +171,111 @@ namespace LD08_tester
     private void port_DataReceived(object sender, SerialDataReceivedEventArgs e)
     {
       int rx_data = serialPort1.ReadChar();
-      BeginInvoke(new SetDataCallback(SetData), new object[] { rx_data });
+      parse_data[write_index] = rx_data;
+      write_index++;
+      if (write_index == parse_data.Length)
+      {
+        write_index = 0;
+        BeginInvoke(new parsePacketCallback(parsePacket));
+      //BeginInvoke(new SetDataCallback(Read), new object[] { rx_data });
+      }
     }
 
-    private void SetData(int data)
+    private void Read(int data)
     {
       this.Invoke((MethodInvoker)delegate
       {
         textBox.AppendText(string.Format("{0:X2} ", data));
       });
+
+      //parsePacket(data);
     }
 
-    //private void Read()
-    //{
-    //  while (_continue)
-    //  {
-    //    try
-    //    {
-    //      int rx_data = serialPort1.ReadByte();
-    //      raw_data[write_index++] = rx_data;
-    //      if (write_index >= 100)
-    //      {
-    //        write_index = 0;
-    //      }
+    private void parsePacket()
+    {
+      read_index = 0;
+      parseStatus = 0;
 
-    //      // print received data on the textbox
-    //      //this.Invoke((MethodInvoker)delegate
-    //      //{
-    //      //  textBox.AppendText(string.Format("{0:X2} ", rx_data));
-    //      //});
-    //    } catch (Exception ex)
-    //    {
-    //      //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    //    }
-    //  }
+      while (read_index < parse_data.Length)
+      {
+        switch (parseStatus)
+        {
+          // Find Header 0x54
+          case 0:
+            if (parse_data[read_index] == 0x54)
+            {
+              //parse_data[read_index] = data;
+              read_index++;
+              parseStatus = 1;
+            }
+            //else
+            //{
+            //  read_index = 0;
+            //  parseStatus = 0;
+            //}  
+            break;
 
-    //  if (_continue == false)
-    //  {
-    //    try
-    //    {
-    //      serialPort1.Close();
-    //      //readThread.Join();
-    //      //readThread.Abort();
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //      //MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-    //    }
-    //  }
-    //}
+          // Find Length 0x2C
+          case 1:
+            if (parse_data[read_index] == 0x2C)
+            {
+              //parse_data[read_index] = data;
+              read_index++;
+              parseStatus = 2;
+            }
+            else
+            {
+              Array.Clear(parse_data, 0, parse_data.Length);
+              read_index = 47;
+            }
+            break;
+
+          // Get the rest data
+          case 2:
+            int crc = 0;
+            for (int count = 0; count < parse_data.Length - 1;)
+            {
+              crc = CrcTable[(byte)(crc ^ parse_data[count]) & 0xFF];
+              this.Invoke((MethodInvoker)delegate
+              {
+                textBox.AppendText(string.Format("{0:X2} ", parse_data[count]));
+              });
+              count++;
+            }
+            this.Invoke((MethodInvoker)delegate
+            {
+              textBox.AppendText(string.Format("{0:X2} ", parse_data[46]));
+            });
+
+            lds_rpm = (parse_data[3] << 8) + parse_data[2];
+            data_length = parse_data[1];
+            end_angle = ((parse_data[43] << 8) + parse_data[42]) / 100.0;
+            start_angle = ((parse_data[5] << 8) + parse_data[4]) / 100.0;
+            timestamp = (parse_data[45] << 8) + parse_data[44];
+            timestamp_temp = timestamp;
+
+            this.Invoke((MethodInvoker)delegate
+            {
+              textBox.AppendText(Environment.NewLine + "===[" + string.Format("{0:X2} ", parse_data[46]) + ", " + string.Format("{0:X2} ", crc) + "]===" + Environment.NewLine);
+              textBox_rpm.Text = lds_rpm.ToString();
+              textBox_data_length.Text = data_length.ToString();
+              textBox_start_angle.Text = start_angle.ToString();
+              textBox_end_angle.Text = end_angle.ToString();
+              textBox_time.Text = timestamp.ToString();
+              textBox_angle_gap.Text = (end_angle - start_angle).ToString();
+              textBox_time_gap.Text = (timestamp - timestamp_temp).ToString();
+              textBox_time_gap.Text = timestamp_temp.ToString();
+            });
+
+            Array.Clear(parse_data, 0, parse_data.Length);
+            read_index = 47;
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
 
     //private void Process()
     //{
