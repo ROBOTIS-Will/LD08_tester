@@ -291,7 +291,7 @@
       this.Controls.Add(this.label1);
       this.Name = "Form1";
       this.Text = "TurtleBot3 LD08 Tester";
-      this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+      //this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
       this.Load += new System.EventHandler(this.Form1_Load);
       this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyDown);
       this.groupBox1.ResumeLayout(false);
